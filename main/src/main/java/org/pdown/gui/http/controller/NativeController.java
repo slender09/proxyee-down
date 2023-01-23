@@ -1,15 +1,41 @@
 package org.pdown.gui.http.controller;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.Channel;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpVersion;
-import java.awt.Desktop;
-import java.awt.Toolkit;
+import io.netty.handler.codec.http.*;
+import javafx.application.Platform;
+import jdk.nashorn.internal.runtime.Undefined;
+import org.pdown.core.boot.HttpDownBootstrap;
+import org.pdown.core.dispatch.HttpDownCallback;
+import org.pdown.core.util.OsUtil;
+import org.pdown.gui.DownApplication;
+import org.pdown.gui.com.Components;
+import org.pdown.gui.content.PDownConfigContent;
+import org.pdown.gui.entity.PDownConfigInfo;
+import org.pdown.gui.extension.ExtensionContent;
+import org.pdown.gui.extension.ExtensionInfo;
+import org.pdown.gui.extension.HookScript;
+import org.pdown.gui.extension.HookScript.Event;
+import org.pdown.gui.extension.mitm.server.PDownProxyServer;
+import org.pdown.gui.extension.mitm.util.ExtensionCertUtil;
+import org.pdown.gui.extension.mitm.util.ExtensionProxyUtil;
+import org.pdown.gui.extension.util.ExtensionUtil;
+import org.pdown.gui.http.util.HttpHandlerUtil;
+import org.pdown.gui.util.AppUtil;
+import org.pdown.gui.util.ConfigUtil;
+import org.pdown.gui.util.ExecUtil;
+import org.pdown.rest.form.HttpRequestForm;
+import org.pdown.rest.form.TaskForm;
+import org.pdown.rest.util.PathUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
@@ -19,30 +45,8 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import javafx.application.Platform;
-import org.pdown.core.boot.HttpDownBootstrap;
-import org.pdown.core.dispatch.HttpDownCallback;
-import org.pdown.core.util.OsUtil;
-import org.pdown.gui.DownApplication;
-import org.pdown.gui.com.Components;
-import org.pdown.gui.content.PDownConfigContent;
-import org.pdown.gui.entity.PDownConfigInfo;
-import org.pdown.gui.extension.ExtensionContent;
-import org.pdown.gui.extension.mitm.server.PDownProxyServer;
-import org.pdown.gui.extension.mitm.util.ExtensionCertUtil;
-import org.pdown.gui.extension.mitm.util.ExtensionProxyUtil;
-import org.pdown.gui.extension.util.ExtensionUtil;
-import org.pdown.gui.http.util.HttpHandlerUtil;
-import org.pdown.gui.util.AppUtil;
-import org.pdown.gui.util.ConfigUtil;
-import org.pdown.gui.util.ExecUtil;
-import org.pdown.rest.util.PathUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
-import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 @RequestMapping("native")
 public class NativeController {
@@ -134,6 +138,7 @@ public class NativeController {
     BeanUtils.copyProperties(configInfo, beforeConfigInfo);
     if (localeChange) {
       DownApplication.INSTANCE.loadPopupMenu();
+      DownApplication.INSTANCE.refreshBrowserMenu();
     }
     //检查到前置代理有变动重启MITM代理服务器
     if (proxyChange && PDownProxyServer.isStart) {
@@ -251,6 +256,41 @@ public class NativeController {
     return extensionCommon(request, true);
   }
 
+  /**
+   * 加载本地扩展
+   */
+  @RequestMapping("installLocalExtension")
+  public FullHttpResponse installLocalExtension(Channel channel, FullHttpRequest request) throws Exception {
+    Map<String, Object> data = new HashMap<>();
+    Map<String, Object> map = getJSONParams(request);
+    String path = (String) map.get("path");
+    //刷新扩展content
+    ExtensionInfo loadExt = ExtensionContent.refresh(path, true);
+    if (loadExt == null) {
+      return new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST);
+    }
+    data.put("data", loadExt);
+    //刷新系统pac代理
+    AppUtil.refreshPAC();
+    return HttpHandlerUtil.buildJson(data);
+  }
+
+  /**
+   * 卸载扩展
+   */
+  @RequestMapping("uninstallExtension")
+  public FullHttpResponse uninstallExtension(Channel channel, FullHttpRequest request) throws Exception {
+    Map<String, Object> data = new HashMap<>();
+    Map<String, Object> map = getJSONParams(request);
+    String path = (String) map.get("path");
+    boolean local = map.get("local") != null ? (boolean) map.get("local") : false;
+    //卸载扩展
+    ExtensionContent.remove(path, local);
+    //刷新系统pac代理
+    AppUtil.refreshPAC();
+    return HttpHandlerUtil.buildJson(data);
+  }
+
   private FullHttpResponse extensionCommon(FullHttpRequest request, boolean isUpdate) throws Exception {
     Map<String, Object> map = getJSONParams(request);
     String server = (String) map.get("server");
@@ -276,16 +316,15 @@ public class NativeController {
     Map<String, Object> map = getJSONParams(request);
     String path = (String) map.get("path");
     boolean enabled = (boolean) map.get("enabled");
-    ExtensionContent.get()
+    boolean local = map.get("local") != null ? (boolean) map.get("local") : false;
+    ExtensionInfo extensionInfo = ExtensionContent.get()
         .stream()
-        .filter(extensionInfo -> extensionInfo.getMeta().getPath().equals(path))
+        .filter(e -> e.getMeta().getPath().equals(path))
         .findFirst()
-        .get()
-        .getMeta()
-        .setEnabled(enabled)
-        .save();
+        .get();
+    extensionInfo.getMeta().setEnabled(enabled).save();
     //刷新pac
-    ExtensionContent.refresh();
+    ExtensionContent.refresh(extensionInfo.getMeta().getFullPath(), local);
     AppUtil.refreshPAC();
     return new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
   }
@@ -323,7 +362,7 @@ public class NativeController {
   public FullHttpResponse installCert(Channel channel, FullHttpRequest request) throws Exception {
     Map<String, Object> data = new HashMap<>();
     boolean status;
-    if (OsUtil.isUnix()) {
+    if (OsUtil.isUnix() || OsUtil.isWindowsXP()) {
       if (!AppUtil.checkIsInstalledCert()) {
         ExtensionCertUtil.buildCert(AppUtil.SSL_PATH, AppUtil.SUBJECT);
       }
@@ -371,10 +410,59 @@ public class NativeController {
     return new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
   }
 
+  @RequestMapping("updateExtensionSetting")
+  public FullHttpResponse updateExtensionSetting(Channel channel, FullHttpRequest request) throws Exception {
+    Map<String, Object> map = getJSONParams(request);
+    String path = (String) map.get("path");
+    Map<String, Object> setting = (Map<String, Object>) map.get("setting");
+    ExtensionInfo extensionInfo = ExtensionContent.get()
+        .stream()
+        .filter(e -> e.getMeta().getPath().equals(path))
+        .findFirst()
+        .get();
+    extensionInfo.getMeta().setSettings(setting).save();
+    return new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+  }
+
+  @RequestMapping("onResolve")
+  public FullHttpResponse onResolve(Channel channel, FullHttpRequest request) throws Exception {
+    HttpRequestForm taskRequest = getJSONParams(request, HttpRequestForm.class);
+    //遍历扩展模块是否有对应的处理
+    List<ExtensionInfo> extensionInfos = ExtensionContent.get();
+    for (ExtensionInfo extensionInfo : extensionInfos) {
+      if (extensionInfo.getMeta().isEnabled()) {
+        if (extensionInfo.getHookScript() != null
+            && !StringUtils.isEmpty(extensionInfo.getHookScript().getScript())) {
+          Event event = extensionInfo.getHookScript().hasEvent(HookScript.EVENT_RESOLVE, taskRequest.getUrl());
+          if (event != null) {
+            try {
+              //执行resolve方法
+              Object result = ExtensionUtil.invoke(extensionInfo, event, taskRequest, false);
+              if (result != null && !(result instanceof Undefined)) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                String temp = objectMapper.writeValueAsString(result);
+                TaskForm taskForm = objectMapper.readValue(temp, TaskForm.class);
+                //有一个扩展解析成功的话直接返回
+                return HttpHandlerUtil.buildJson(taskForm, Include.NON_DEFAULT);
+              }
+            } catch (Exception e) {
+              LOGGER.error("An exception occurred while resolve()", e);
+            }
+          }
+        }
+      }
+    }
+    return new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+  }
+
   private Map<String, Object> getJSONParams(FullHttpRequest request) throws IOException {
     ObjectMapper objectMapper = new ObjectMapper();
-    Map<String, Object> map = objectMapper.readValue(request.content().toString(Charset.forName("UTF-8")), Map.class);
-    return map;
+    return objectMapper.readValue(request.content().toString(Charset.forName("UTF-8")), Map.class);
+  }
+
+  private <T> T getJSONParams(FullHttpRequest request, Class<T> clazz) throws IOException {
+    ObjectMapper objectMapper = new ObjectMapper();
+    return objectMapper.readValue(request.content().toString(Charset.forName("UTF-8")), clazz);
   }
 
 }

@@ -14,8 +14,11 @@ export default {
     fmtErr: '格式不正確',
     choose: '選擇',
     save: '儲存',
+    refresh: '刷新',
     copySucc: '複製成功',
-    copyFail: '複製失敗'
+    copyFail: '複製失敗',
+    saveSucc: '保存成功',
+    saveFail: '保存失敗'
   },
   tasks: {
     createTask: '建立任務',
@@ -23,6 +26,7 @@ export default {
     pauseDownloads: '暫停下載',
     deleteTask: '刪除任務',
     deleteTaskTip: '是否刪除任務和檔案？',
+    revealInFolder: '打開下載目錄',
     method: '方法',
     url: '連結',
     fileName: '名稱',
@@ -46,11 +50,15 @@ export default {
     detail: '下載細節',
     checkSameTask: '偵測到可能相同的下載任務，是否選擇任務進行更新？',
     sameTaskList: '任務清單',
-    sameTaskPlaceholder: '請選擇要更新的任務'
+    sameTaskPlaceholder: '請選擇要更新的任務',
+    running: '進行中',
+    waiting: '等待中',
+    done: '已完成'
   },
   extension: {
     conditions: '使用須知',
-    conditionsContent: '首次使用擴充模組時，必須安裝由 Proxyee Down 隨機產生的一個 CA 憑證，點選下方的安裝按鈕並依系統的引導進行確認安裝。(注意：程式會在安裝前偵測作業系統中是否有安裝過憑證，當偵測到有安裝的情況會提示刪除對應的舊 CA 憑證)',
+    conditionsContent:
+      '首次使用擴充模組時，必須安裝由 Proxyee Down 隨機產生的一個 CA 憑證，點選下方的安裝按鈕並依系統的引導進行確認安裝。(注意：程式會在安裝前偵測作業系統中是否有安裝過憑證，當偵測到有安裝的情況會提示刪除對應的舊 CA 憑證)',
     install: '安裝',
     globalProxy: '全域代理',
     proxyTip: '點選檢視說明',
@@ -66,11 +74,18 @@ export default {
     actionUpdate: '更新',
     actionInstall: '安裝',
     actionDetail: '細節',
+    uninstall: '卸載',
+    uninstallTip: '確定卸載此擴展嗎？',
     switch: '開關',
     downloadingTip: '下載中...[伺服器(',
     downloadOk: '下載成功',
     downloadErr: '下載失敗',
-    downloadErrTip: '自動切換伺服器'
+    downloadErrTip: '自動切換伺服器',
+    extCenter: '擴充中心',
+    installLocalExt: '加載本地擴充',
+    installOk: '加載成功',
+    installErr: '加載失敗，請檢查manifest.json文件',
+    setting: '預設'
   },
   setting: {
     downSetting: '下載設定',
@@ -87,6 +102,7 @@ export default {
     uiMode: 'UI 模式',
     uiModeWindows: '視窗',
     uiModeBrowser: '瀏覽器',
+    autoOpen: '啟動彈窗',
     checkUpdate: '檢查更新',
     checkUpdateWeek: '每週',
     checkUpdateStartup: '每次啟動',
@@ -106,9 +122,13 @@ export default {
       title: '項目',
       content: 'Proxyee Down 是一款開源的免費軟體，基於本軟體的高速下載核心和擴充套件，可以方便並快速的下載所需資源。',
       githubAddress: '項目首頁：',
+      official: '官方網站：',
+      community: '官方社區：',
       tutorial: '使用教學：',
       feedback: '問題回報：',
-      currentVersion: '目前版本：'
+      currentVersion: '目前版本：',
+      checkUpdate: '檢查更新：',
+      noNewVersion: '已經是最新版本'
     },
     team: {
       title: '團隊'

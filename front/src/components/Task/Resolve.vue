@@ -58,13 +58,12 @@
         @click="onSubmit">{{ $t('tip.ok') }}</Button>
       <Button @click="$emit('input', false)">{{ $t('tip.cancel') }}</Button>
     </div>
-    <Spin size="large"
-      fix
-      v-if="load" />
   </Modal>
 </template>
 
 <script>
+import { onResolve } from '../../common/native.js'
+
 export default {
   props: {
     value: {
@@ -73,7 +72,6 @@ export default {
   },
   data() {
     return {
-      load: false,
       hasHead: false,
       hasBody: false,
       form: {
@@ -106,7 +104,7 @@ export default {
       this.form.heads.splice(index, 1)
     },
     onSubmit() {
-      this.$refs['form'].validate(valid => {
+      this.$refs['form'].validate(async valid => {
         if (valid) {
           const requestData = {
             method: this.form.method,
@@ -124,21 +122,25 @@ export default {
           if (this.hasBody) {
             requestData.body = this.form.body
           }
-          this.load = true
-          this.$http
-            .put('http://127.0.0.1:26339/util/resolve', requestData)
-            .then(result => {
-              this.$emit('input', false)
-              const request = JSON.stringify(result.data.request)
-              const response = JSON.stringify(result.data.response)
-              this.$router.push({
-                path: '/',
-                query: { request: request, response: response }
-              })
+          this.$Spin.show()
+          try {
+            let resolveData = await onResolve(requestData)
+            if (!resolveData) {
+              const result = await this.$http.put('http://127.0.0.1:26339/util/resolve', requestData)
+              resolveData = result.data
+            }
+            this.$emit('input', false)
+            const request = JSON.stringify(resolveData.request)
+            const response = JSON.stringify(resolveData.response)
+            const config = JSON.stringify(resolveData.config)
+            const data = JSON.stringify(resolveData.data)
+            this.$router.push({
+              path: '/',
+              query: { request: request, response: response, config: config, data: data }
             })
-            .finally(() => {
-              this.load = false
-            })
+          } finally {
+            this.$Spin.hide()
+          }
         }
       })
     },

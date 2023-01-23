@@ -7,11 +7,13 @@ import org.pdown.rest.util.ContentUtil;
 
 public class Meta {
 
-  public transient static final String CONFIG_FILE = ".config.dat";
+  public transient static final String CONFIG_FILE = ".ext_data/.config.dat";
 
   private transient String path;
   private transient String fullPath;
   private boolean enabled = true;
+  private boolean local = true;
+  private Map<String, Object> settings;
   private Map<String, Object> data;
 
   public String getPath() {
@@ -41,6 +43,15 @@ public class Meta {
     return this;
   }
 
+  public Map<String, Object> getSettings() {
+    return settings;
+  }
+
+  public Meta setSettings(Map<String, Object> settings) {
+    this.settings = settings;
+    return this;
+  }
+
   public Map<String, Object> getData() {
     return data;
   }
@@ -48,6 +59,14 @@ public class Meta {
   public Meta setData(Map<String, Object> data) {
     this.data = data;
     return this;
+  }
+
+  public boolean isLocal() {
+    return local;
+  }
+
+  public void setLocal(boolean local) {
+    this.local = local;
   }
 
   public void save() {

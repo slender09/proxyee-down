@@ -14,8 +14,11 @@ export default {
     fmtErr: '格式不正确',
     choose: '选择',
     save: '保存',
+    refresh: '刷新',
     copySucc: '复制成功',
-    copyFail: '复制失败'
+    copyFail: '复制失败',
+    saveSucc: '保存成功',
+    saveFail: '保存失败'
   },
   tasks: {
     createTask: '创建任务',
@@ -23,6 +26,7 @@ export default {
     pauseDownloads: '暂停下载',
     deleteTask: '删除任务',
     deleteTaskTip: '是否删除任务和文件？',
+    revealInFolder: '打开下载目录',
     method: '方法',
     url: '链接',
     fileName: '文件名',
@@ -46,11 +50,15 @@ export default {
     detail: '下载详情',
     checkSameTask: '检测到可能相同的下载任务，是否选择任务进行刷新？',
     sameTaskList: '任务列表',
-    sameTaskPlaceholder: '请选择要刷新的任务'
+    sameTaskPlaceholder: '请选择要刷新的任务',
+    running: '进行中',
+    waiting: '等待中',
+    done: '已完成'
   },
   extension: {
     conditions: '使用须知',
-    conditionsContent: '首次使用扩展模块时，必须安装由Proxyee Down随机生成的一个CA证书，点击下面的安装按钮并按系统的引导进行确认安装。(注意：程序会在安装前检测操作系统中是否有安装过证书，当检测到有安装的情况会提示删除对应的旧CA证书)',
+    conditionsContent:
+      '首次使用扩展模块时，必须安装由Proxyee Down随机生成的一个CA证书，点击下面的安装按钮并按系统的引导进行确认安装。(注意：程序会在安装前检测操作系统中是否有安装过证书，当检测到有安装的情况会提示删除对应的旧CA证书)',
     install: '安装',
     globalProxy: '全局代理',
     proxyTip: '点击查看说明',
@@ -65,12 +73,19 @@ export default {
     action: '操作',
     actionUpdate: '更新',
     actionInstall: '安装',
+    uninstall: '卸载',
+    uninstallTip: '确定卸载此扩展吗？',
     actionDetail: '详情',
     switch: '开关',
     downloadingTip: '下载中...[服务器(',
     downloadOk: '下载成功',
     downloadErr: '下载失败',
-    downloadErrTip: '自动切换服务器'
+    downloadErrTip: '自动切换服务器',
+    extCenter: '扩展中心',
+    installLocalExt: '加载本地扩展',
+    installOk: '加载成功',
+    installErr: '加载失败，请检查manifest.json文件',
+    setting: '设置'
   },
   setting: {
     downSetting: '下载设置',
@@ -87,6 +102,7 @@ export default {
     uiMode: 'UI模式',
     uiModeWindows: '窗口',
     uiModeBrowser: '浏览器',
+    autoOpen: '启动弹窗',
     checkUpdate: '检查更新',
     checkUpdateWeek: '每周',
     checkUpdateStartup: '每次启动',
@@ -106,9 +122,13 @@ export default {
       title: '项目',
       content: 'Proxyee Down是一款开源的免费软件，基于本软件的高速下载内核和扩展，可以方便并快速的下载所需资源。',
       githubAddress: '项目主页：',
+      official: '官方网站：',
+      community: '官方社区：',
       tutorial: '使用教程：',
       feedback: '问题反馈：',
-      currentVersion: '当前版本：'
+      currentVersion: '当前版本：',
+      checkUpdate: '检查更新：',
+      noNewVersion: '已经是最新版本'
     },
     team: {
       title: '团队'

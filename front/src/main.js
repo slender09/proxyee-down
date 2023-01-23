@@ -59,7 +59,17 @@ Vue.prototype.$http.interceptors.response.use(
   }
 )
 
+//去除字节大小格式化后的i字符
+const format = numeral.prototype.constructor.fn.format
+numeral.prototype.constructor.fn.format = function(fmt) {
+  let result = format.call(this, fmt)
+  if (/^.*ib$/.test(fmt)) {
+    result = result.replace('i', '')
+  }
+  return result
+}
 Vue.prototype.$numeral = numeral
+
 Date.prototype.format = function(fmt) {
   var o = {
     'M+': this.getMonth() + 1, // Month
@@ -107,11 +117,19 @@ getInitConfig()
     // Set default language
     i18n.locale = result.locale
   })
+  .catch(() => {
+    Vue.prototype.$config = {}
+  })
   .finally(() => {
     new Vue({
       router,
       store,
       i18n,
+      data() {
+        return {
+          badges: { tasks: 0, extension: 0, setting: 0, about: 0, support: 0 }
+        }
+      },
       render: h => h(App)
     }).$mount('#app')
   })
